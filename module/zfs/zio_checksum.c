@@ -161,6 +161,39 @@ abd_fletcher_4_byteswap(abd_t *abd, uint64_t size,
 	abd_fletcher_4_impl(abd, size, &acd);
 }
 
+/* CRC32 implementation */
+static void
+abd_checksum_crc32(abd_t *abd, uint64_t size,
+    const void *ctx_template, zio_cksum_t *zcp)
+{
+	(void) ctx_template;
+	uint8_t *buf;
+	uint64_t i;
+	uint32_t crc = 0xFFFFFFFF;
+
+	/* Process data in chunks */
+	for (i = 0; i < size; i += ZIO_CRC32_CHUNK_SIZE) {
+		uint64_t chunk_size = MIN(size - i, ZIO_CRC32_CHUNK_SIZE);
+		buf = abd_borrow_buf(abd, i, chunk_size);
+		
+#ifdef __x86_64__
+		if (__builtin_cpu_supports("sse4.2")) {
+			crc = crc32_sse42(buf, chunk_size, crc);
+		} else {
+			crc = crc32_table_sw(buf, chunk_size, crc);
+		}
+#else
+		crc = crc32_table_sw(buf, chunk_size, crc);
+#endif
+		
+		abd_return_buf(abd, buf, chunk_size);
+	}
+
+	/* Final XOR */
+	crc ^= 0xFFFFFFFF;
+	ZIO_SET_CHECKSUM(zcp, crc, 0, 0, 0);
+}
+
 /*
  * Checksum vectors.
  *
@@ -172,6 +205,9 @@ zio_checksum_info_t zio_checksum_table[ZIO_CHECKSUM_FUNCTIONS] = {
 	{{NULL, NULL}, NULL, NULL, 0, "on"},
 	{{abd_checksum_off,		abd_checksum_off},
 	    NULL, NULL, 0, "off"},
+	{{abd_checksum_crc32,		abd_checksum_crc32},
+	    NULL, NULL, ZCHECKSUM_FLAG_METADATA | ZCHECKSUM_FLAG_EMBEDDED,
+	    "crc32"},
 	{{abd_checksum_sha256,		abd_checksum_sha256},
 	    NULL, NULL, ZCHECKSUM_FLAG_METADATA | ZCHECKSUM_FLAG_EMBEDDED,
 	    "label"},

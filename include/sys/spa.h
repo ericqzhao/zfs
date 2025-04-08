@@ -358,7 +358,7 @@ typedef enum bp_embedded_type {
 	((wp) != &(bp)->blk_prop && (wp) != (&(bp)->blk_birth_word[1]))
 
 #define	SPA_BLKPTRSHIFT	7		/* blkptr_t is 128 bytes	*/
-#define	SPA_DVAS_PER_BP	3		/* Number of DVAs in a bp	*/
+#define	SPA_DVAS_PER_BP	1		/* Number of DVAs in a bp	*/
 #define	SPA_SYNC_MIN_VDEVS 3		/* min vdevs to update during sync */
 
 /*
@@ -373,7 +373,6 @@ typedef enum bp_embedded_type {
 typedef struct blkptr {
 	dva_t		blk_dva[SPA_DVAS_PER_BP]; /* Data Virtual Addresses */
 	uint64_t	blk_prop;	/* size, compression, type, etc	    */
-	uint64_t	blk_pad[2];	/* Extra space for the future	    */
 	uint64_t	blk_birth_word[2];
 	uint64_t	blk_fill;	/* fill count			    */
 	zio_cksum_t	blk_cksum;	/* 256-bit checksum		    */
@@ -588,8 +587,6 @@ typedef struct blkptr {
 {						\
 	BP_ZERO_DVAS(bp);			\
 	(bp)->blk_prop = 0;			\
-	(bp)->blk_pad[0] = 0;			\
-	(bp)->blk_pad[1] = 0;			\
 	(bp)->blk_birth_word[0] = 0;		\
 	(bp)->blk_birth_word[1] = 0;		\
 	(bp)->blk_fill = 0;			\

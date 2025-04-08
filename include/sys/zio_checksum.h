@@ -32,6 +32,8 @@
 #include <sys/zio.h>
 #include <zfeature_common.h>
 #include <zfs_fletcher.h>
+#include <sys/types.h>
+#include <sys/abd.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -146,6 +148,9 @@ extern int zio_checksum_error(zio_t *zio, zio_bad_cksum_t *out);
 extern enum zio_checksum spa_dedup_checksum(spa_t *spa);
 extern void zio_checksum_templates_free(spa_t *spa);
 extern spa_feature_t zio_checksum_to_feature(enum zio_checksum cksum);
+
+/* CRC32 chunk size for processing large blocks */
+#define	ZIO_CRC32_CHUNK_SIZE	(1ULL << 20)	/* 1MB chunks */
 
 #ifdef	__cplusplus
 }
